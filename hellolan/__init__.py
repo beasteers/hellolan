@@ -12,11 +12,78 @@ def main():
         'getall': getall,
         'scan': _gentable(scan),
         **{k: _gentable(get_preset(k)) for k in PRESETS},
+        'ssh-': ssh_into,
     })
 
 
 def getall(col, hostname=None, preset=None, *a, **kw):
     return [d[col] for d in get_preset(preset)(hostname, *a, **kw)]
+
+
+def ssh_into(hostname, *a, user=None, i=None, sshargs=None, port=None, **kw):
+    from subprocess import call
+
+    hostname, user, port = _parse_hostname(hostname, user, port)
+    hosts = list(scan(hostname, *a, ports=port or 22, **kw))
+    host = _resolve_multiple_hosts(hosts, i)
+
+    if not host:
+        return
+
+    cmd = 'ssh {} {}'.format(_build_hoststr(host['ip'], user, port), sshargs or '').strip()
+
+    print('''
+---------------------
+Starting SSH Session: $ {cmd}
+---------------------
+'''.format(cmd=cmd))
+    call(cmd, shell=True)
+    print('''
+-------------------
+Ended SSH Session. ({cmd})
+-------------------
+'''.format(cmd=cmd))
+
+
+
+
+def _parse_hostname(hostname, user=None, port=None):
+    if not user:
+        user, hostname = hostname.split('@') if '@' in hostname else (hostname, None)
+    if not port:
+        hostname, port = hostname.split(':') if ':' in hostname else (hostname, None)
+    return hostname, user, port
+
+def _build_hoststr(hostname, user, port):
+    if user:
+        hostname = '{}@{}'.format(user, hostname)
+    if port:
+        hostname = '{} -p {}'.format(hostname, port)
+    return hostname
+
+def _resolve_multiple_hosts(hosts, i=None):
+    print()
+    # select which host to connect to
+    if not hosts:
+        print('No hosts found.')
+        return
+
+    if len(hosts) > 1: # by default, ask for multiple
+        from tabulate import tabulate
+        print('Multiple hosts found:')
+        print(tabulate(hosts, headers='keys', showindex=True))
+        print()
+
+        if i is None:
+            i = int(input('Which host to use? [0]: ').strip() or 0)
+    else:
+        i = 0
+
+    host = hosts[i or 0]
+    print('Using host: {}'.format(host['hostname']))
+    return host
+
+
 
 
 def _wrap(func, *a, **kw):
@@ -57,12 +124,25 @@ def _gentable(func):
                 items.append(x)
                 out.change(table(items, headers).splitlines())
 
+    def parseable(*a, headers=None, **kw):
+        data = list(func(*a, **kw))
+        headers = headers or set().union(d.keys() for d in data)
+        print('\n'.join([
+            '\t'.join([d.get(c) or '' for c in headers])
+            for d in data
+        ]))
+
     @functools.wraps(func)
-    def inner(*a, headers=None, timer=True, **kw):
+    def inner(*a, headers=None, fmt=None, timer=True, **kw):
         t0 = time.time()
-        # asavailable(*a, headers=headers, **kw)
-        allatonce(*a, headers=headers, **kw)
-        if timer:
+
+        if fmt:
+            headers = fmt.split(',') if isinstance(fmt, str) else fmt
+            parseable(*a, headers=headers, **kw)
+        else:
+            asavailable(*a, headers=headers, **kw)
+            # allatonce(*a, headers=headers, **kw)
+        if timer and not fmt:
             print('-')
             print('Took {:.1f} seconds'.format(time.time() - t0))
     return inner

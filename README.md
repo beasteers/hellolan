@@ -58,6 +58,42 @@ hellolan scan --net=localhost --ports=8888-8893
 #     Took 11.4 seconds
 ```
 
+#### Now you can use the command to directly ssh into a device !!!
+How it works - it will split by the '@' symbol, poll for a device who's host matches 'abc' and replaces 'abc' with the found ip address.
+```bash
+hellolan ssh- user@abc
+```
+So for example:
+```
+mbp $ hellolan ssh- user@abc
+
+Multiple hosts found:
+    hostname  ip             ports
+--  --------  -------------  -------
+ 0  abcdejkl  192.168.1.127  [22]
+ 1  abcdefgh  192.168.1.236  [22]
+
+Which host to use? [0]: 1
+Using host: abcdefgh
+
+---------------------
+Starting SSH Session: $ ssh sonyc@192.168.1.236
+---------------------
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Wed Apr 15 18:40:32 2020 from 192.168.1.214
+user@abcdefgh:~ $ exit
+logout
+Connection to 192.168.1.236 closed.
+
+-------------------
+Ended SSH Session. (ssh sonyc@192.168.1.236)
+-------------------
+
+mbp $
+```
+
 #### It's also importable!
 
 ```python

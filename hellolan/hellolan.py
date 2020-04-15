@@ -27,7 +27,7 @@ def lanscan(net='192.168.1.0/24', ports='22-443'):
                 'ip': host, 'ports': ports}
 
 
-def scan(hostname=None, ignore=None, ip=None, n=None, **kw):
+def scan(hostname=None, ignore=None, ip=None, n=None, hasname=None, **kw):
     '''Scan devices on your local network. Filter by hostname or ip.
     '''
     # get all devices
@@ -38,6 +38,8 @@ def scan(hostname=None, ignore=None, ip=None, n=None, **kw):
         devices = (d for d in devices if not matches(d, ignore))
     if ip:
         devices = (d for d in devices if check_ranges([d['ip'], d['ip'].split('.')], ip))
+    if hasname:
+        devices = (d for d in devices if d['hostname'])
     if n is not None:
         devices = (d for d, i in zip(devices, range(n)))
     # get devices grouped into different categories
@@ -52,7 +54,7 @@ Utils
 
 MATCH_COLS = 'hostname', 'ip'
 matches = lambda d, pat: any(
-    fnmatch.fnmatch(d[c], pat) or pat in d[c] for c in MATCH_COLS)
+    pat in d[c] or fnmatch.fnmatch(d[c], pat) for c in MATCH_COLS)
 
 def check_ranges(xs, ranges):
     ranges = str(ranges).split(',')
