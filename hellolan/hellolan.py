@@ -6,15 +6,25 @@ log = logging.getLogger(__name__)
 
 nm = nmap.PortScanner()
 
-def lanscan(net='192.168.1.0/24', ports='22-443'):
+def lanscan(net='192.168.1.0/24', port=None, intensity=None,
+            nmapargs=None, top=200, services=False):
     '''Scan network and ports.
 
-    ports='22-433', ports=22, ports='22,80', ports=(80, 443, '2000-2200')
+    port='22-433', port=22, port='22,80', port=(80, 443, '2000-2200')
     '''
-    if isinstance(ports, (tuple, list)):
-        ports = ','.join(map(str, ports))
+    if isinstance(port, (tuple, list)):
+        port = ','.join(map(str, port))
 
-    nm.scan(net, ports=str(ports))
+    nmapargs = (nmapargs,) if isinstance(nmapargs, str) else tuple(nmapargs or ())
+    if services:
+        nmapargs = ('-sV',)
+    if intensity is not None:
+        assert 0 <= intensity <= 9
+        nmapargs += ('--version-intensity {}'.format(intensity),)
+    if top:
+        nmapargs += ('--top-ports {}'.format(top),) #('-F',) # -F is not working
+
+    nm.scan(net, ports=str(port) if port else None, arguments=' '.join(nmapargs))
     for host in nm.all_hosts():
         ports = [
             port for proto in nm[host].all_protocols()
@@ -23,7 +33,7 @@ def lanscan(net='192.168.1.0/24', ports='22-443'):
 
         if ports:
             yield {
-                'hostname': nm[host].hostname(),
+                'hostname': nm[host].hostname() or '',
                 'ip': host, 'ports': ports}
 
 
@@ -53,13 +63,15 @@ Utils
 '''
 
 MATCH_COLS = 'hostname', 'ip'
-matches = lambda d, pat: any(
-    pat in d[c] or fnmatch.fnmatch(d[c], pat) for c in MATCH_COLS)
+
+def matches(d, pat):
+    pat = str(pat)
+    return any(pat in d[c] or fnmatch.fnmatch(d[c], pat) for c in MATCH_COLS)
 
 def check_ranges(xs, ranges):
     ranges = str(ranges).split(',')
     between = lambda x, xmin, xmax: xmin < x < xmax
     return any(
         (between(x, *r.split('-')) if '-' in r else x == r)
-        for x in xs for r in ranges
+        for x in xs or () for r in ranges
     )
