@@ -116,13 +116,13 @@ def _gentable(func):
     def allatonce(*a, headers=None, **kw):
         print(table(list(func(*a, **kw)), headers))
 
-    def asavailable(*a, headers=None, **kw):
-        import reprint
-        with reprint.output(interval=0.3) as out:
-            items = []
-            for x in func(*a, **kw):
-                items.append(x)
-                out.change(table(items, headers).splitlines())
+    # def asavailable(*a, headers=None, **kw):
+    #     import reprint
+    #     with reprint.output(interval=0.3) as out:
+    #         items = []
+    #         for x in func(*a, **kw):
+    #             items.append(x)
+    #             out.change(table(items, headers).splitlines())
 
     def parseable(*a, headers=None, **kw):
         data = list(func(*a, **kw))
