@@ -15,6 +15,9 @@ def main():
         'ssh-': ssh_into,
     })
 
+def ssh_main():
+    import fire
+    fire.Fire(ssh_into)
 
 def getall(col, hostname=None, preset=None, *a, **kw):
     return [d[col] for d in get_preset(preset)(hostname, *a, **kw)]

@@ -1,7 +1,7 @@
 import setuptools
 
 NAME = 'hellolan'
-VERSION = '0.0.5'
+VERSION = '0.0.6'
 ORG = 'beasteers'
 
 setuptools.setup(
@@ -14,7 +14,7 @@ setuptools.setup(
     author_email='bea.steers@gmail.com',
     url='https://github.com/{}/{}'.format(ORG, NAME),
     packages=setuptools.find_packages(),
-    entry_points={'console_scripts': ['hellolan=hellolan:main']},
+    entry_points={'console_scripts': ['hellolan=hellolan:main', 'hellossh=hellolan:ssh_main']},
     install_requires=['python-nmap', 'tabulate', 'fire'],
     license='MIT License',
     keywords='port scanning filter hostname ip lan wan localhost '
