@@ -6,6 +6,11 @@ Basically, I made this because I often need to scan for raspberry pi's on my loc
 ## Install
 
 ```bash
+# mac
+brew install nmap
+# linux
+apt-get install nmap
+
 pip install hellolan
 ```
 
