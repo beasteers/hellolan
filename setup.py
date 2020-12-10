@@ -1,7 +1,7 @@
 import setuptools
 
 NAME = 'hellolan'
-VERSION = '0.0.6'
+VERSION = '0.0.7'
 ORG = 'beasteers'
 
 setuptools.setup(

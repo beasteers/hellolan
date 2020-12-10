@@ -56,6 +56,10 @@ def scan(hostname=None, ignore=None, ip=None, n=None, hasname=None, **kw):
     return devices
 
 
+def hostname(ip, port='22-433'):
+    nm.scan(ip, str(port) if port else None)
+    return nm[ip].hostname()
+
 '''
 
 Utils
