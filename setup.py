@@ -15,7 +15,7 @@ setuptools.setup(
     url='https://github.com/{}/{}'.format(ORG, NAME),
     packages=setuptools.find_packages(),
     entry_points={'console_scripts': ['hellolan=hellolan:main', 'hellossh=hellolan:ssh_main']},
-    install_requires=['python-nmap', 'tabulate', 'fire'],
+    install_requires=['python-nmap', 'tabulate', 'fire', 'reprint'],
     license='MIT License',
     keywords='port scanning filter hostname ip lan wan localhost '
              '192.168 192.168.1.0 192.168.1.1')

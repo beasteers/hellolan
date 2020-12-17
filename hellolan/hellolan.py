@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 nm = nmap.PortScanner()
 
 def lanscan(net='192.168.1.0/24', port=None, intensity=None,
-            nmapargs=None, top=200, services=False):
+            nmapargs=None, top=200, services=False, repeat=1, showall=False):
     '''Scan network and ports.
 
     port='22-433', port=22, port='22,80', port=(80, 443, '2000-2200')
@@ -24,17 +24,21 @@ def lanscan(net='192.168.1.0/24', port=None, intensity=None,
     if top:
         nmapargs += ('--top-ports {}'.format(top),) #('-F',) # -F is not working
 
-    nm.scan(net, ports=str(port) if port else None, arguments=' '.join(nmapargs))
-    for host in nm.all_hosts():
-        ports = [
-            port for proto in nm[host].all_protocols()
-            for port, status in nm[host][proto].items()
-            if status['state'] == 'open']
+    found = set()
+    for i in range(repeat or 1):
+        nm.scan(net, ports=str(port) if port else None, arguments=' '.join(nmapargs))
+        for host in nm.all_hosts():
+            ports = [
+                port for proto in nm[host].all_protocols()
+                for port, status in nm[host][proto].items()
+                if status['state'] == 'open'
+            ]
 
-        if ports:
-            yield {
-                'hostname': nm[host].hostname() or '',
-                'ip': host, 'ports': ports}
+            if ports or showall:
+                found.add(host)
+                yield {
+                    'hostname': nm[host].hostname() or '',
+                    'ip': host, 'ports': ports}
 
 
 def scan(hostname=None, ignore=None, ip=None, n=None, hasname=None, **kw):
