@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 nm = nmap.PortScanner()
 
 def lanscan(net='192.168.1.0/24', port=None, intensity=None,
-            nmapargs=None, top=200, services=False, repeat=1, showall=False):
+            nmapargs=None, top=50, services=False, repeat=1, showall=False):
     '''Scan network and ports.
 
     port='22-433', port=22, port='22,80', port=(80, 443, '2000-2200')
@@ -74,7 +74,7 @@ MATCH_COLS = 'hostname', 'ip'
 
 def matches(d, pat):
     pat = str(pat)
-    return any(pat in d[c] or fnmatch.fnmatch(d[c], pat) for c in MATCH_COLS)
+    return any(pat in str(d[c]) or fnmatch.fnmatch(str(d[c]), pat) for c in MATCH_COLS)
 
 def check_ranges(xs, ranges):
     ranges = str(ranges).split(',')

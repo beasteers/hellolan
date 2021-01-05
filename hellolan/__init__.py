@@ -39,8 +39,10 @@ def _loop(n):
     if n:
         yield from range(n)
     else:
+        i = 0
         while True:
-            yield
+            yield i
+            i += 1
 
 def _dict_update(prev, new):
     prev, new = prev or {}, new or {}
@@ -59,6 +61,38 @@ def _gentable(func):
     import itertools
     from tabulate import tabulate
 
+    def _watch(disp, *a, times=None, timer=True, **kw):
+        import datetime
+        import reprint
+        items = {}
+        with reprint.output() as out:
+            try:
+                out.append('Starting scan...')
+                for i in _loop(times):
+                    t0 = time.time()
+                    j = 0
+                    for j, x in enumerate(func(*a, **kw)):
+                        items[x['ip']] = _dict_update(items.get(x['ip']), x)
+                        out.change(disp(list(items.values())).splitlines())
+                    if timer:
+                        out.append('Scan {} finished at {}. took {:.1f}s. Found {} hosts.'.format(
+                            i+1, datetime.datetime.now().strftime('%c'),
+                            time.time() - t0, len(items)))
+            except KeyboardInterrupt:
+                out.change(disp(list(items.values())).splitlines())
+        return list(items.values())
+
+    def watchable(disp):
+        @functools.wraps(disp)
+        def outer(*a, watch=False, headers=None, **kw):
+            if watch:
+                return _watch((lambda data: disp(data, headers)), *a, **kw)
+            result = func(*a, **kw)
+            print(disp(result, headers=headers))
+            return result
+        return outer
+
+    @watchable
     def table(items, headers=None, sortby=None):
         if isinstance(items, dict):
             items = list(items.values())
@@ -68,69 +102,52 @@ def _gentable(func):
             items = sorted(items, key=lambda x: x[sortby])
         return tabulate(items, headers=headers or ())
 
-    def allatonce(*a, headers=None, **kw):
-        data = list(func(*a, **kw))
-        print(table(data, headers))
-        return data
-
-    def asavailable(*a, headers=None, times=None, **kw):
-        import datetime
-        import reprint
-        items = {}
-        try:
-            with reprint.output() as out:
-                out.append('Starting scan...')
-                for i in _loop(times):
-                    t0 = time.time()
-                    for x in func(*a, **kw):
-                        items[x['ip']] = _dict_update(items.get(x['ip']), x)
-                        out.change(table(items, headers).splitlines())
-                        out.append('Scan finished at {}. took {:.1f}s. Found {} hosts.'.format(
-                            datetime.datetime.now().strftime('%c'), time.time() - t0, len(items)))
-        except KeyboardInterrupt:
-            print('\nInterrupted.')
-        return list(items.values())
-
-    def parseable(*a, headers=None, **kw):
-        data = list(func(*a, **kw))
-        headers = headers or set().union(d.keys() for d in data)
-        print('\n'.join([
-            '\t'.join([d.get(c) or '' for c in headers])
+    @watchable
+    def parseable(data, headers=None):
+        headers = headers or set().union(*(d.keys() for d in data))
+        return '\n'.join([
+            '\t'.join(str(d.get(c)) or '' for c in headers)
             for d in data
-        ]))
-        return data
+        ])
 
-    def as_json(*a, headers=None, **kw):
+    @watchable
+    def as_json(data, headers=None):
         import json
-        data = list(func(*a, **kw))
         headers = headers or len(data) and data[0].keys() or ()
         data = ([d[headers[0]] for d in data] if len(headers) == 1 else
                 [{c: d[c] for c in headers} for d in data])
-        print(json.dumps(data))
-        return data
+        return json.dumps(data, indent=4)
 
-    def save_json(out, result):
+    def save_json(out, result, inventory=None):
         import json
         with open(out, 'w') as f:
-            json.dump({
-                d['ip']: _dict_drop(d, 'ip', 'ports') for d in result
-            }, f)
+            if inventory:
+                if isinstance(inventory, str):
+                    inventory = inventory.split('&')
+                inventory = (i.split('=') for i in inventory)
+                res = {
+                    group: [x['ip'] for x in result if matches(x, pat)]
+                    for group, pat in inventory
+                }
+            else:
+                res = {
+                    d['ip']: _dict_drop(d, 'ip', 'ports') for d in result
+                }
+            json.dump(res, f)
 
     @functools.wraps(func)
-    def inner(*a, headers=None, ip=False, watch=False, tab=False, timer=True, json=False, out=None, **kw):
+    def inner(*a, headers=None, iplist=False, tab=False, timer=True, json=False, out=None, inventory=None, **kw):
         t0 = time.time()
-        if ip:
-            headers, tab = ('ip',), True
-        if watch:
-            result = asavailable(*a, headers=headers, **kw)
-        elif json:
-            result = as_json(*a, headers=headers, **kw)
+        if iplist:
+            headers, tab = (headers or ('ip',)), True
+        if json:
+            result = as_json(*a, headers=headers, timer=timer, **kw)
         elif tab:
-            result = parseable(*a, headers=headers, **kw)
+            result = parseable(*a, headers=headers, timer=timer, **kw)
         else:
-            result = allatonce(*a, headers=headers, **kw)
+            result = table(*a, headers=headers, timer=timer, **kw)
         if out:
-            save_json(out, result)
+            save_json(out, result, inventory=inventory)
         if timer and not tab and not json:
             print('-')
             print('Took {:.1f} seconds'.format(time.time() - t0))
