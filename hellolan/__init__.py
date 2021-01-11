@@ -61,35 +61,35 @@ def _gentable(func):
     import itertools
     from tabulate import tabulate
 
-    def _watch(disp, *a, times=None, timer=True, **kw):
-        import datetime
-        import reprint
-        items = {}
-        with reprint.output() as out:
-            try:
-                out.append('Starting scan...')
-                for i in _loop(times):
-                    t0 = time.time()
-                    j = 0
-                    for j, x in enumerate(func(*a, **kw)):
-                        items[x['ip']] = _dict_update(items.get(x['ip']), x)
-                        out.change(disp(list(items.values())).splitlines())
-                    if timer:
-                        out.append('Scan {} finished at {}. took {:.1f}s. Found {} hosts.'.format(
-                            i+1, datetime.datetime.now().strftime('%c'),
-                            time.time() - t0, len(items)))
-            except KeyboardInterrupt:
-                out.change(disp(list(items.values())).splitlines())
-        return list(items.values())
-
+    # def _watch(disp, *a, headers=None, times=None, timer=True, **kw):
     def watchable(disp):
         @functools.wraps(disp)
-        def outer(*a, watch=False, headers=None, **kw):
-            if watch:
-                return _watch((lambda data: disp(data, headers)), *a, **kw)
-            result = func(*a, **kw)
-            print(disp(result, headers=headers))
-            return result
+        def outer(*a, watch=False, headers=None, times=None, timer=True, **kw):
+            if not watch:
+                # return _watch((lambda data: disp(data, headers)), *a, times=times, timer=timer, **kw)
+                result = func(*a, **kw)
+                print(disp(list(result), headers=headers))
+                return result
+
+            import datetime
+            import reprint
+            items = {}
+            with reprint.output() as out:
+                try:
+                    out.append('Starting scan...')
+                    for i in _loop(times):
+                        t0 = time.time()
+                        j = 0
+                        for j, x in enumerate(func(*a, **kw)):
+                            items[x['ip']] = _dict_update(items.get(x['ip']), x)
+                            out.change(disp(list(items.values()), headers).splitlines())
+                        if timer:
+                            out.append('Scan {} finished at {}. took {:.1f}s. Found {} hosts.'.format(
+                                i+1, datetime.datetime.now().strftime('%c'),
+                                time.time() - t0, len(items)))
+                except KeyboardInterrupt:
+                    out.change(disp(list(items.values())).splitlines())
+            return list(items.values())
         return outer
 
     @watchable
