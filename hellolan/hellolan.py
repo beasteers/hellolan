@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 nm = nmap.PortScanner()
 
 def lanscan(net='192.168.1.0/24', port=None, intensity=None,
-            nmapargs=None, top=50, services=False, repeat=1, force=False, showall=False):
+            nmapargs=None, top=50, services=False, repeat=1, showall=False):
     '''Scan network and ports.
 
     port='22-433', port=22, port='22,80', port=(80, 443, '2000-2200')
@@ -23,8 +23,8 @@ def lanscan(net='192.168.1.0/24', port=None, intensity=None,
         nmapargs += ('--version-intensity {}'.format(intensity),)
     if top:
         nmapargs += ('--top-ports {}'.format(top),) #('-F',) # -F is not working
-    if force:
-        nmapargs += ('-R',)
+    # if force:
+    #     nmapargs += ('-R',)
 
     for i in range(repeat or 1):
         nm.scan(net, ports=str(port) if port else None, arguments=' '.join(nmapargs))

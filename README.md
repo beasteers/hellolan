@@ -35,6 +35,21 @@ node-b827e9j315hf  192.168.1.236  [22]
 Took 3.3 seconds
 ```
 
+If you run with `sudo`, you can also see the mac address and vendor.
+
+```
+$ sudo hellolan ssh --watch
+hostname                ip             ports    mac                vendor
+----------------------  -------------  -------  -----------------  ---------------------------
+
+raspberrypi  192.168.1.242  [22]     DC:A6:32:C4:F4:A3  Raspberry Pi Trading
+raspberrypi  192.168.1.65   [22]     DC:A6:32:A9:F0:82  Raspberry Pi Trading
+             192.168.1.66   [22]     52:D4:F7:18:5F:74
+             192.168.1.67   [22]     00:1A:62:03:F3:FF  Data Robotics, Incorporated
+Scan 1 finished at Tue Jan 19 23:08:55 2021. took 10.2s. Found 4 hosts.
+```
+
+
 There's more:
 ```bash
 # you can filter the results too

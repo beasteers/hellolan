@@ -93,13 +93,13 @@ def _gentable(func):
         return outer
 
     @watchable
-    def table(items, headers=None, sortby=None):
+    def table(items, headers=None, sort='ip'):
         if isinstance(items, dict):
             items = list(items.values())
         if not headers and items and isinstance(items[0], dict):
             headers = 'keys'
-        if sortby:
-            items = sorted(items, key=lambda x: x[sortby])
+        if sort:
+            items = sorted(items, key=lambda x: natsort_key(x[sort]))
         return tabulate(items, headers=headers or ())
 
     @watchable
@@ -156,6 +156,10 @@ def _gentable(func):
 def partial(func, *a, **kw):
     '''functools.partial doesn't apply wraps ???? wtf ??? it's right there......'''
     return wraps(func)(lambda *ai, **kwi: func(*a, *ai, **kw, **kwi))
+
+import re
+def natsort_key(s, _nsre=re.compile('([0-9]+)')):
+    return tuple(int(t) if t.isdigit() else t.lower() for t in _nsre.split(s))
 
 
 if __name__ == '__main__':
