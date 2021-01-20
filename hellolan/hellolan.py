@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 nm = nmap.PortScanner()
 
 def lanscan(net='192.168.1.0/24', port=None, intensity=None,
-            nmapargs=None, top=50, services=False, repeat=1, showall=False):
+            nmapargs=None, top=50, services=False, repeat=1, force=False, showall=False):
     '''Scan network and ports.
 
     port='22-433', port=22, port='22,80', port=(80, 443, '2000-2200')
@@ -23,22 +23,31 @@ def lanscan(net='192.168.1.0/24', port=None, intensity=None,
         nmapargs += ('--version-intensity {}'.format(intensity),)
     if top:
         nmapargs += ('--top-ports {}'.format(top),) #('-F',) # -F is not working
+    if force:
+        nmapargs += ('-R',)
 
-    found = set()
     for i in range(repeat or 1):
         nm.scan(net, ports=str(port) if port else None, arguments=' '.join(nmapargs))
-        for host in nm.all_hosts():
+        for ip in nm.all_hosts():
+            host = nm[ip]
             ports = [
-                port for proto in nm[host].all_protocols()
-                for port, status in nm[host][proto].items()
+                port for proto in host.all_protocols()
+                for port, status in host[proto].items()
                 if status['state'] == 'open'
             ]
 
             if ports or showall:
-                found.add(host)
-                yield {
-                    'hostname': nm[host].hostname() or '',
-                    'ip': host, 'ports': ports}
+                data = {
+                    'hostname': nm[ip].hostname() or '',
+                    'ip': ip, 'ports': ports,
+                    # 'status': host['status']['state'],  # up
+                }
+                # lookup mac address in case they ran with sudo
+                mac = host['addresses'].get('mac')
+                vendor = host['vendor'][mac] if mac and mac in host['vendor'] else None
+                if mac:
+                    data.update({'mac': mac, 'vendor': vendor})
+                yield data
 
 
 def scan(hostname=None, ignore=None, ip=None, n=None, hasname=None, **kw):
