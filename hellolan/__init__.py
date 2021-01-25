@@ -83,7 +83,7 @@ def _gentable(func):
                         j = 0
                         for j, x in enumerate(func(*a, **kw)):
                             items[x['ip']] = _dict_update(items.get(x['ip']), x)
-                            out.change(disp(list(items.values()), headers).splitlines())
+                        out.change(disp(list(items.values()), headers).splitlines())
                         if timer:
                             out.append('Scan {} finished at {}. took {:.1f}s. Found {} hosts.'.format(
                                 i+1, datetime.datetime.now().strftime('%c'),
