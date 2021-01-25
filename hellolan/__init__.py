@@ -16,6 +16,7 @@ def main():
         **{k: _gentable(get_preset(k)) for k in PRESETS},
         'ssh-': ssh_into,
         'hostname': hostname,
+        'me': me,
     })
 
 def ssh_main():

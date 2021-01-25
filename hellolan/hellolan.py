@@ -1,4 +1,5 @@
 import fnmatch
+import subprocess
 import nmap
 import logging
 
@@ -69,9 +70,25 @@ def scan(hostname=None, ignore=None, ip=None, n=None, hasname=None, **kw):
     return devices
 
 
-def hostname(ip, port='22-433'):
+def hostname(ip=None, port='22-433'):
+    if ip is None:
+        ip = me()
     nm.scan(ip, str(port) if port else None)
     return nm[ip].hostname()
+
+
+_SKIP_ME = {'lo0'}
+def me(*names, v6=False, all=False):
+    import ifcfg
+    inet = 'inet6' if v6 else 'inet'
+    ips = {k: ifc[inet] for k, ifc in ifcfg.interfaces().items()
+           if k not in _SKIP_ME and ifc.get(inet)}
+    if names:
+        return [ips.get(n) for n in names]
+    if all:
+        return ips
+    return max_common_prefix('192.168.4', *ips.values(), n=2, split='.')
+
 
 '''
 
@@ -92,3 +109,19 @@ def check_ranges(xs, ranges):
         (between(x, *r.split('-')) if '-' in r else x == r)
         for x in xs or () for r in ranges
     )
+
+
+def max_common_prefix(prefix, *values, n=1, split=None):
+    if split:
+        prefix, values = prefix.split(split), (x.split(split) for x in values)
+    match = max((
+        (i, x) for i, x in ((n_common_prefix(prefix, val), val) for val in values)
+        if i >= n), default=(None, None))[1]
+    if match is not None and split:
+        match = split.join(match)
+    return match
+
+def n_common_prefix(*strs):
+    return next(
+        (i for i, chs in enumerate(zip(*strs)) if len(set(chs)) > 1),
+        min(len(s) for s in strs))
