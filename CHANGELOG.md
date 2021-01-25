@@ -6,6 +6,7 @@
  - will return all or a subset of ips if positional arguments or an `--all` flag is passed
  - `hellolan hostname` will now return the current machine's hostname in the absence of a specified IP address
  - added `ifcfg` as a dependency (for determining my lan IP)
+ - make assumption that time between scan results is instantaneous compared to rendering (fixes render glitch)
 
 ## 0.0.11
  - add natural sorting to cli table
